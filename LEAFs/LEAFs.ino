@@ -93,8 +93,7 @@ void loop() {
 }
 
 void sendMessage() {
-  String msg = stationNumber;
-  msg += ";";
+  String msg = stationNumber + ";";
   
   int chk = DHT11.read(DHT11PIN);
   
@@ -104,9 +103,8 @@ void sendMessage() {
   aux_temperatura = (String)DHT11.temperature;
   aux_umidade = (String)DHT11.humidity;
 
-  msg += aux_temperatura;
-  msg += ";";
-  msg += aux_umidade;
+  msg += "t|" + aux_temperatura + ";";
+  msg += "h|" + aux_umidade;
   
   mesh.sendBroadcast(msg);
 

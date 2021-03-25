@@ -65,30 +65,33 @@ void loop() {
 }
 
 void receivedCallback( const uint32_t &from, const String &msg ) {
+
+  Serial.println(" ");
+  Serial.println("##############");
   Serial.printf("bridge: Received from %u msg=%s\n", from, msg.c_str());
     
   String stationNumber = splitStringByIndex(msg, ';', 0);
-  String temperature_read = splitStringByIndex(msg, ';', 1);
-  String humidity_read = splitStringByIndex(msg, ';', 2);
-
   Serial.printf("stationNumber %s \n", stationNumber.c_str());
-  Serial.printf("temperature_read %s \n", temperature_read.c_str());
-  Serial.printf("humidity_read %s \n", humidity_read.c_str());
+
+  //Quantidade de parâmetros a serem enviados
+  int count = countAttributes(msg, ';');  
 
   String topic = "/iot/station";
   topic += stationNumber;
   topic += "/attrs/";
-  
-  String mensageTemp = "t|";
-  mensageTemp += temperature_read;
 
-  String mensageHum = "h|";
-  mensageHum += humidity_read;
-  
-  Serial.printf("mensageTemp mqtt %s \n", mensageTemp.c_str());
-  mqttClient.publish(topic.c_str(), mensageTemp.c_str());
-  Serial.printf("mensageHum mqtt %s \n", mensageHum.c_str());
-  mqttClient.publish(topic.c_str(), mensageHum.c_str());
+  String mensageToSend = "";
+
+  //Realiza a leitura de parametros a serem enviados de forma dinâmica, formato recebido - "tag|valor;tag2|valor2"
+  for(int i=1; i < count; i++){
+    mensageToSend  = splitStringByIndex(msg, ';', i);
+
+    String debug = "mensageToSend " + String(i) + " mqtt " + mensageToSend.c_str();
+    Serial.println(debug);
+
+    //Realiza a publicação no servidor MQTT de forma dinâmica.
+    mqttClient.publish(topic.c_str(), mensageToSend.c_str());
+  }
   
 }
 
@@ -119,7 +122,7 @@ String splitStringByIndex(String data, char separator, int index)
 }
 
 //Método que devolve a quantidade de separadores na mensagem recebida
-int countSeparator(String data, char separator)
+int countAttributes(String data, char separator)
 {
   int found = 0;
   int maxIndex = data.length()-1;
