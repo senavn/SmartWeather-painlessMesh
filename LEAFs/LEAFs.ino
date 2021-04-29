@@ -1,20 +1,16 @@
 //************************************************************
 // this is a simple example that uses the easyMesh library
 //
-// 1. blinks led once for every node on the mesh
-// 2. blink cycle repeats every BLINK_PERIOD
-// 3. sends a silly message to every node on the mesh at a random time between 1 and 5 seconds
-// 4. prints anything it receives to Serial.print
 //
 //
 //************************************************************
 #include <painlessMesh.h>
 #include <dht11.h>
-#define DHT11PIN 25
 
 //Definição de pinos para os sensores
 #define   LED             2       
-#define   DHT11PIN        25
+#define   DHT11PIN        25 // pino de leitura DHT11
+#define   PLUVPIN         13 // pino de leitura Pluviometro 
 
 #define   BLINK_PERIOD    3000 // milliseconds until cycle repeat
 #define   BLINK_DURATION  100  // milliseconds LED is on for
@@ -23,18 +19,17 @@
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
 
-// Prototypes
-void sendMessage(); 
-void receivedCallback(uint32_t from, String & msg);
-void newConnectionCallback(uint32_t nodeId);
-void changedConnectionCallback(); 
-void nodeTimeAdjustedCallback(int32_t offset); 
-void delayReceivedCallback(uint32_t from, int32_t delay);
-
+// DECLARAÇÃO DE VARIÁVEIS
 Scheduler     userScheduler; // to control your personal task
 painlessMesh  mesh;
 dht11         DHT11;
-String stationNumber = "01";
+String stationNumber = "01"; // id da estação
+
+// pluviometro
+int pluv_val = 0;            // variável de controle do pluviometro                
+int pluv_old_val = 0;        // variável de controle do pluviometro        
+int pluv_count = 0;          // contador de variações do pluviometro
+float pluv_mm = 0;  
 
 bool calc_delay = false;
 SimpleList<uint32_t> nodes;
@@ -50,6 +45,7 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(LED, OUTPUT);
+  pinMode(PLUVPIN, INPUT_PULLUP);
 
   mesh.setDebugMsgTypes(ERROR | DEBUG);  // set before init() so that you can see error messages
 
@@ -89,6 +85,7 @@ void setup() {
 
 void loop() {
   mesh.update();
+  updatePluviometro();
   digitalWrite(LED, !onFlag);
 }
 
@@ -105,6 +102,7 @@ void sendMessage() {
 
   msg += "t|" + aux_temperatura + ";";
   msg += "h|" + aux_umidade;
+  msg += "pluv|" + (String)pluv_mm;
   
   mesh.sendBroadcast(msg);
 
@@ -165,3 +163,25 @@ void nodeTimeAdjustedCallback(int32_t offset) {
 void delayReceivedCallback(uint32_t from, int32_t delay) {
   Serial.printf("Delay to node %u is %d us\n", from, delay);
 }
+
+void updatePluviometro (){
+  // ler o estado do switch pelo pino de entrada:
+  pluv_val = digitalRead(PLUVPIN);      //Read the status of the Reed swtich
+  
+  if ((pluv_val == LOW) && (pluv_old_val == HIGH)){    //Check to see if the status has changed
+      delay(10);                                       // Delay put in to deal with any "bouncing" in the switch.
+      pluv_count = pluv_count + 1;                     //Add 1 to the count of bucket tips
+      pluv_old_val = pluv_val;                         //Make the old value equal to the current value
+      Serial.print("Medida de chuva (contagem): ");
+      Serial.print(pluv_count);//*0.2794); 
+      Serial.println(" pulso");
+      Serial.print("Medida de chuva (calculado): ");
+      Serial.print(pluv_count*0.25); 
+      Serial.println(" mm");
+      pluv_mm = pluv_count*0.25;
+   } 
+       
+   else {
+        pluv_old_val = pluv_val;                      //If the status hasn't changed then do nothing
+   }
+ }
