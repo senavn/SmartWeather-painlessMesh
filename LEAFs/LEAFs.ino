@@ -11,6 +11,7 @@
 #define   LED             2       
 #define   DHT11PIN        25 // pino de leitura DHT11
 #define   PLUVPIN         13 // pino de leitura Pluviometro 
+#define   ANEMPIN         12 // pino de leitura Anemometro
 
 #define   BLINK_PERIOD    3000 // milliseconds until cycle repeat
 #define   BLINK_DURATION  100  // milliseconds LED is on for
@@ -31,11 +32,27 @@ int pluv_old_val = 0;        // variável de controle do pluviometro
 int pluv_count = 0;          // contador de variações do pluviometro
 float pluv_mm = 0;  
 
+// anemometro
+volatile byte anem_counter;   // magnet counter for sensor - int counter = 0;
+float anem_RPM = 0;       // Revolutions per minute
+float anem_speedwind = 0;// Wind speed (km/s)
+float anem_vm=0;
+float anem_vmd=0;
+float anem_vmax=0;
+unsigned long anem_startTime = 0 ;        // long startTime = 0
+// Constantes
+const float pi = 3.14159265;  // Numero pi
+int period = 3000;      // Tempo de medida(miliseconds) 3000 menor que o intervalos de leituras 
+int radius = 147;      // Aqui ajusta o raio do anemometro em milimetros  **************
+
 bool calc_delay = false;
 SimpleList<uint32_t> nodes;
 
 void sendMessage() ; // Prototype
-Task taskSendMessage( TASK_SECOND * 5, TASK_FOREVER, &sendMessage ); // start with a one second interval
+Task taskSendMessage(TASK_SECOND * 5, TASK_FOREVER, &sendMessage); // start with a one second interval
+
+void windvelocity() ; // Prototype
+Task taskUpdateWindSpeed (TASK_MILLISECOND * 3100, TASK_FOREVER, &windvelocity);
 
 // Task to blink the number of nodes
 Task blinkNoNodes;
@@ -46,6 +63,9 @@ void setup() {
 
   pinMode(LED, OUTPUT);
   pinMode(PLUVPIN, INPUT_PULLUP);
+  delay(10);
+  pinMode(ANEMPIN, INPUT_PULLUP);
+  attachInterrupt(ANEMPIN, addcount, RISING);
 
   mesh.setDebugMsgTypes(ERROR | DEBUG);  // set before init() so that you can see error messages
 
@@ -56,8 +76,11 @@ void setup() {
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
   mesh.onNodeDelayReceived(&delayReceivedCallback);
 
-  userScheduler.addTask( taskSendMessage );
+  userScheduler.addTask(taskSendMessage);
+  userScheduler.addTask(taskUpdateWindSpeed);
   taskSendMessage.enable();
+  taskUpdateWindSpeed.enable();
+  
 
   blinkNoNodes.set(BLINK_PERIOD, (mesh.getNodeList().size() + 1) * 2, []() {
       // If on, switch off, else switch on
@@ -100,9 +123,10 @@ void sendMessage() {
   aux_temperatura = (String)DHT11.temperature;
   aux_umidade = (String)DHT11.humidity;
 
-  msg += "t|" + aux_temperatura + ";";
-  msg += "h|" + aux_umidade;
-  msg += "pluv|" + (String)pluv_mm;
+  msg += "temperature|" + aux_temperatura + ";";
+  msg += "humity|" + aux_umidade;
+  msg += "rain_mm|" + (String)pluv_mm;
+  msg += "wind_speed|" + (String)anem_speedwind;
   
   mesh.sendBroadcast(msg);
 
@@ -164,6 +188,8 @@ void delayReceivedCallback(uint32_t from, int32_t delay) {
   Serial.printf("Delay to node %u is %d us\n", from, delay);
 }
 
+//-----------------------------------------------------------------------------------------------------------------
+// Pluviometro
 void updatePluviometro (){
   // ler o estado do switch pelo pino de entrada:
   pluv_val = digitalRead(PLUVPIN);      //Read the status of the Reed swtich
@@ -172,16 +198,50 @@ void updatePluviometro (){
       delay(10);                                       // Delay put in to deal with any "bouncing" in the switch.
       pluv_count = pluv_count + 1;                     //Add 1 to the count of bucket tips
       pluv_old_val = pluv_val;                         //Make the old value equal to the current value
-      Serial.print("Medida de chuva (contagem): ");
-      Serial.print(pluv_count);//*0.2794); 
-      Serial.println(" pulso");
-      Serial.print("Medida de chuva (calculado): ");
-      Serial.print(pluv_count*0.25); 
-      Serial.println(" mm");
+      //Serial.print("Medida de chuva (contagem): ");
+      //Serial.print(pluv_count);//*0.2794); 
+      //Serial.println(" pulso");
       pluv_mm = pluv_count*0.25;
+      Serial.print("Medida de chuva: ");
+      Serial.print(pluv_mm); 
+      Serial.println(" mm");
    } 
        
    else {
         pluv_old_val = pluv_val;                      //If the status hasn't changed then do nothing
    }
  }
+
+//-----------------------------------------------------------------------------------------------------------------
+// Anemometro
+// Measure wind speed
+void windvelocity(){
+    if(millis() - anem_startTime >= period) {
+
+        detachInterrupt(ANEMPIN); // Desabilita interrupcao
+        //Serial.print("Pulsos :");
+        //Serial.print(counter);
+
+        anem_RPM=((anem_counter)*60)/(period/1000);  // Calculate revolutions per minute (RPM) 60
+        //Serial.print(" - RPM :");
+        //Serial.print(RPM);
+        anem_speedwind = 0;
+        anem_counter = 0;           // Zera cont pulsos
+        unsigned long millis();       
+        anem_startTime = millis();
+
+        attachInterrupt(ANEMPIN, addcount, RISING); // Habilita interrupcao  
+    }
+
+    anem_speedwind = ((30.35 * anem_RPM) / 1000) * 3.6 ;  // Calculate wind speed on km/h
+    //Serial.print(" - Veloc : ");
+    //Serial.println(speedwind);
+    anem_vm=anem_vm+anem_speedwind;
+    if(anem_speedwind > anem_vmax ){
+        anem_vmax = anem_speedwind;
+    }
+}
+
+void addcount(){
+  anem_counter++;
+} 
