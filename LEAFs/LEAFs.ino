@@ -15,6 +15,7 @@
 #define   ANEMPIN         12 // pino de leitura Anemometro
 #define   BMP_SDA         21 // pino Sda do BMP
 #define   BMP_SCL         22 // pino SCL do BMP
+#define   LDRPIN          34 // pino de leitura LDR
 
 #define   BLINK_PERIOD    3000 // milliseconds until cycle repeat
 #define   BLINK_DURATION  100  // milliseconds LED is on for
@@ -68,10 +69,12 @@ void setup() {
 
   pinMode(LED, OUTPUT);
   pinMode(PLUVPIN, INPUT_PULLUP);
+  pinMode(LDRPIN, INPUT); //DEFINE O PINO COMO ENTRADA
   delay(10);
   pinMode(ANEMPIN, INPUT_PULLUP);
   attachInterrupt(ANEMPIN, addcount, RISING);
   boolean statusBMP = bmp280.begin(0x76);
+  
 
   mesh.setDebugMsgTypes(ERROR | DEBUG);  // set before init() so that you can see error messages
 
@@ -126,16 +129,19 @@ void sendMessage() {
   String aux_temperatura;
   String aux_umidade;
   String aux_pressao;
+  String aux_luminosidade;
 
-  aux_pressao = (String)bmp280.readPressure() / 100;
+  aux_pressao = (String)(bmp280.readPressure() / 100);
   aux_temperatura = (String)DHT11.temperature;
   aux_umidade = (String)DHT11.humidity;
+  aux_luminosidade = (String)analogRead(LDRPIN);
 
   msg += "temperature|" + aux_temperatura + ";";
   msg += "humity|" + aux_umidade + ";";
   msg += "rain_mm|" + (String)pluv_mm + ";";
   msg += "wind_speed|" + (String)anem_speedwind + ";";
-  msg += "pressure|" + aux_pressao;
+  msg += "pressure|" + aux_pressao + ";";
+  msg += "luminosity|" + aux_luminosidade;
   
   mesh.sendBroadcast(msg);
 
