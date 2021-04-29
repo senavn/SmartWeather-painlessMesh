@@ -1,17 +1,20 @@
 //************************************************************
-// this is a simple example that uses the easyMesh library
+// 
 //
 //
 //
 //************************************************************
 #include <painlessMesh.h>
 #include <dht11.h>
+#include <Adafruit_BMP280.h>
 
 //Definição de pinos para os sensores
 #define   LED             2       
 #define   DHT11PIN        25 // pino de leitura DHT11
 #define   PLUVPIN         13 // pino de leitura Pluviometro 
 #define   ANEMPIN         12 // pino de leitura Anemometro
+#define   BMP_SDA         21 // pino Sda do BMP
+#define   BMP_SCL         22 // pino SCL do BMP
 
 #define   BLINK_PERIOD    3000 // milliseconds until cycle repeat
 #define   BLINK_DURATION  100  // milliseconds LED is on for
@@ -21,9 +24,11 @@
 #define   MESH_PORT       5555
 
 // DECLARAÇÃO DE VARIÁVEIS
-Scheduler     userScheduler; // to control your personal task
-painlessMesh  mesh;
-dht11         DHT11;
+Scheduler         userScheduler; // to control your personal task
+painlessMesh      mesh;
+dht11             DHT11;
+Adafruit_BMP280   bmp280;
+
 String stationNumber = "01"; // id da estação
 
 // pluviometro
@@ -66,6 +71,7 @@ void setup() {
   delay(10);
   pinMode(ANEMPIN, INPUT_PULLUP);
   attachInterrupt(ANEMPIN, addcount, RISING);
+  boolean statusBMP = bmp280.begin(0x76);
 
   mesh.setDebugMsgTypes(ERROR | DEBUG);  // set before init() so that you can see error messages
 
@@ -119,14 +125,17 @@ void sendMessage() {
   
   String aux_temperatura;
   String aux_umidade;
+  String aux_pressao;
 
+  aux_pressao = (String)bmp280.readPressure() / 100;
   aux_temperatura = (String)DHT11.temperature;
   aux_umidade = (String)DHT11.humidity;
 
   msg += "temperature|" + aux_temperatura + ";";
-  msg += "humity|" + aux_umidade;
-  msg += "rain_mm|" + (String)pluv_mm;
-  msg += "wind_speed|" + (String)anem_speedwind;
+  msg += "humity|" + aux_umidade + ";";
+  msg += "rain_mm|" + (String)pluv_mm + ";";
+  msg += "wind_speed|" + (String)anem_speedwind + ";";
+  msg += "pressure|" + aux_pressao;
   
   mesh.sendBroadcast(msg);
 
