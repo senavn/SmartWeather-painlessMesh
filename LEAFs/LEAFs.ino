@@ -16,6 +16,7 @@
 #define   BMP_SDA         21 // pino Sda do BMP
 #define   BMP_SCL         22 // pino SCL do BMP
 #define   LDRPIN          34 // pino de leitura LDR
+#define   GND_H           35 // pino de leitura da umidade do solo
 
 #define   BLINK_PERIOD    3000 // milliseconds until cycle repeat
 #define   BLINK_DURATION  100  // milliseconds LED is on for
@@ -46,10 +47,12 @@ float anem_vm=0;
 float anem_vmd=0;
 float anem_vmax=0;
 unsigned long anem_startTime = 0 ;        // long startTime = 0
+
 // Constantes
 const float pi = 3.14159265;  // Numero pi
 int period = 3000;      // Tempo de medida(miliseconds) 3000 menor que o intervalos de leituras 
 int radius = 147;      // Aqui ajusta o raio do anemometro em milimetros  **************
+int const_umidade_solo = 4095;
 
 bool calc_delay = false;
 SimpleList<uint32_t> nodes;
@@ -66,7 +69,7 @@ bool onFlag = false;
 
 void setup() {
   Serial.begin(115200);
-
+  pinMode(GND_H, INPUT);
   pinMode(LED, OUTPUT);
   pinMode(PLUVPIN, INPUT_PULLUP);
   pinMode(LDRPIN, INPUT); //DEFINE O PINO COMO ENTRADA
@@ -74,7 +77,6 @@ void setup() {
   pinMode(ANEMPIN, INPUT_PULLUP);
   attachInterrupt(ANEMPIN, addcount, RISING);
   boolean statusBMP = bmp280.begin(0x76);
-  
 
   mesh.setDebugMsgTypes(ERROR | DEBUG);  // set before init() so that you can see error messages
 
@@ -130,18 +132,21 @@ void sendMessage() {
   String aux_umidade;
   String aux_pressao;
   String aux_luminosidade;
-
+  String aux_gnd_h;
+  
   aux_pressao = (String)(bmp280.readPressure() / 100);
   aux_temperatura = (String)DHT11.temperature;
   aux_umidade = (String)DHT11.humidity;
   aux_luminosidade = (String)analogRead(LDRPIN);
+  aux_gnd_h = (String)(100-((analogRead(GND_H)*100)/const_umidade_solo));
 
   msg += "temperature|" + aux_temperatura + ";";
-  msg += "humity|" + aux_umidade + ";";
+  msg += "humidity|" + aux_umidade + ";";
   msg += "rain_mm|" + (String)pluv_mm + ";";
   msg += "wind_speed|" + (String)anem_speedwind + ";";
   msg += "pressure|" + aux_pressao + ";";
-  msg += "luminosity|" + aux_luminosidade;
+  msg += "luminosity|" + aux_luminosidade + ";";
+  msg += "ground_humidity|" + aux_gnd_h;  
   
   mesh.sendBroadcast(msg);
 
@@ -217,9 +222,6 @@ void updatePluviometro (){
       //Serial.print(pluv_count);//*0.2794); 
       //Serial.println(" pulso");
       pluv_mm = pluv_count*0.25;
-      Serial.print("Medida de chuva: ");
-      Serial.print(pluv_mm); 
-      Serial.println(" mm");
    } 
        
    else {
