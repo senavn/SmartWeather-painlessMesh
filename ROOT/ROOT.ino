@@ -1,3 +1,12 @@
+//************************************************************
+// Desenvolvido por: 
+// Vinícius Sena
+// Jefferson Vieira
+// Lucas Barreto
+// Marcus Vinícius
+//
+// Faculdade de Tecnologia Termomecanica - São Bernardo do Campo - SP
+//************************************************************
 #include <Arduino.h>
 #include <painlessMesh.h>
 #include <PubSubClient.h>

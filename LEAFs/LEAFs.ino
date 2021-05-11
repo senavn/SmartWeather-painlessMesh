@@ -1,8 +1,11 @@
 //************************************************************
-// 
+// Desenvolvido por: 
+// Vinícius Sena
+// Jefferson Vieira
+// Lucas Barreto
+// Marcus Vinícius
 //
-//
-//
+// Faculdade de Tecnologia Termomecanica - São Bernardo do Campo - SP
 //************************************************************
 #include <painlessMesh.h>
 #include <dht11.h>
