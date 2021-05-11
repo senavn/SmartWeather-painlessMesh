@@ -31,7 +31,7 @@ painlessMesh      mesh;
 dht11             DHT11;
 Adafruit_BMP280   bmp280;
 
-String stationNumber = "005"; // id da estação
+String stationNumber = "004"; // id da estação
 
 // pluviometro
 int pluv_val = 0;            // variável de controle do pluviometro                
@@ -119,7 +119,7 @@ void setup() {
 
 void loop() {
   mesh.update();
-  updatePluviometro();
+  //updatePluviometro();
   digitalWrite(LED, !onFlag);
 }
 
@@ -130,23 +130,23 @@ void sendMessage() {
   
   String aux_temperatura;
   String aux_umidade;
-  String aux_pressao;
-  String aux_luminosidade;
-  String aux_gnd_h;
+  //String aux_pressao;
+  //String aux_luminosidade;
+  //String aux_gnd_h;
   
-  aux_pressao = (String)(bmp280.readPressure() / 100);
+  //aux_pressao = (String)(bmp280.readPressure() / 100);
   aux_temperatura = (String)DHT11.temperature;
   aux_umidade = (String)DHT11.humidity;
-  aux_luminosidade = (String)analogRead(LDRPIN);
-  aux_gnd_h = (String)(100-((analogRead(GND_H)*100)/const_umidade_solo));
+  //aux_luminosidade = (String)analogRead(LDRPIN);
+  //aux_gnd_h = (String)(100-((analogRead(GND_H)*100)/const_umidade_solo));
 
   msg += "temperature|" + aux_temperatura + ";";
-  msg += "humidity|" + aux_umidade + ";";
-  msg += "rain_mm|" + (String)pluv_mm + ";";
-  msg += "wind_speed|" + (String)anem_speedwind + ";";
-  msg += "pressure|" + aux_pressao + ";";
-  msg += "luminosity|" + aux_luminosidade + ";";
-  msg += "ground_humidity|" + aux_gnd_h;  
+  msg += "humidity|" + aux_umidade; // + ";";
+  //msg += "rain_mm|" + (String)pluv_mm + ";";
+  //msg += "wind_speed|" + (String)anem_speedwind + ";";
+  //msg += "pressure|" + aux_pressao + ";";
+  //msg += "luminosity|" + aux_luminosidade + ";";
+  //msg += "ground_humidity|" + aux_gnd_h;  
   
   mesh.sendBroadcast(msg);
 
