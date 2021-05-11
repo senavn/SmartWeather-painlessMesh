@@ -8,8 +8,8 @@
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
 
-#define   STATION_SSID     "Citonilo"
-#define   STATION_PASSWORD "cito4357"
+#define   STATION_SSID     "Swami"
+#define   STATION_PASSWORD "papaitop"
 
 #define HOSTNAME "MQTT_Bridge"
 
