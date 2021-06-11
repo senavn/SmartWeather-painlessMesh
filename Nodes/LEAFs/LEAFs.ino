@@ -34,7 +34,7 @@ painlessMesh      mesh;
 dht11             DHT11;
 Adafruit_BMP280   bmp280;
 
-String stationNumber = "005"; // id da estação
+String stationNumber = "007"; // id da estação
 
 // pluviometro
 int pluv_val = 0;            // variável de controle do pluviometro                
